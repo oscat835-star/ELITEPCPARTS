@@ -51,7 +51,7 @@
       </div>
 
       <h1 class="auth-title">Crear cuenta</h1>
-      <p class="auth-sub">¿Ya tenés cuenta? <a href="login.html">Iniciá sesión</a></p>
+      <p class="auth-sub">¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></p>
 
       <div class="auth-alert" id="authAlert" style="display:none"></div>
 
@@ -89,7 +89,7 @@
           <label for="phone">Teléfono</label>
           <div class="input-icon">
             <i class="fa fa-phone"></i>
-            <input type="tel" id="phone" placeholder="+54 11 xxxx-xxxx" autocomplete="tel" />
+            <input type="tel" id="phone" placeholder="+51 999 999 999" autocomplete="tel" />
           </div>
         </div>
 
@@ -113,7 +113,7 @@
           <label for="confirm">Confirmar contraseña <span class="req">*</span></label>
           <div class="input-icon">
             <i class="fa fa-lock"></i>
-            <input type="password" id="confirm" placeholder="Repetí tu contraseña" autocomplete="new-password" />
+            <input type="password" id="confirm" placeholder="Repite tu contraseña" autocomplete="new-password" />
           </div>
           <span class="field-error" id="err-confirm"></span>
         </div>
@@ -130,7 +130,7 @@
 
       </form>
 
-      <div class="auth-divider"><span>o registrate con</span></div>
+      <div class="auth-divider"><span>o regístrate con</span></div>
 
       <div class="social-btns">
         <button class="social-btn" onclick="socialLogin('Google')">
@@ -190,40 +190,44 @@
       const terms     = document.getElementById('terms').checked;
       let valid = true;
 
-      if (!firstName) { setError('firstName', 'Ingresá tu nombre'); valid = false; }
-      if (!lastName)  { setError('lastName',  'Ingresá tu apellido'); valid = false; }
-      if (!email) { setError('email', 'Ingresá tu email'); valid = false; }
+      if (!firstName) { setError('firstName', 'Ingresa tu nombre'); valid = false; }
+      if (!lastName)  { setError('lastName',  'Ingresa tu apellido'); valid = false; }
+      if (!email) { setError('email', 'Ingresa tu email'); valid = false; }
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('email', 'Email inválido'); valid = false; }
       if (!password || password.length < 6) { setError('password', 'Mínimo 6 caracteres'); valid = false; }
       if (password !== confirm) { setError('confirm', 'Las contraseñas no coinciden'); valid = false; }
-      if (!terms) { setError('terms', 'Debés aceptar los términos'); valid = false; }
+      if (!terms) { setError('terms', 'Debes aceptar los términos'); valid = false; }
 
       if (!valid) return;
-
-      const users = JSON.parse(localStorage.getItem('epc_users') || '[]');
-      if (users.find(u => u.email === email)) {
-        setError('email', 'Ya existe una cuenta con ese email');
-        return;
-      }
 
       const btn = document.getElementById('registerBtn');
       btn.disabled = true;
       btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Creando cuenta...';
 
-      setTimeout(() => {
-        const newUser = {
-          id: Date.now(),
-          firstName,
-          lastName,
-          email,
-          phone,
-          password: btoa(password),
-          createdAt: new Date().toLocaleDateString('es-AR'),
-        };
-        users.push(newUser);
-        localStorage.setItem('epc_users', JSON.stringify(users));
-        loginSuccess(newUser, false);
-      }, 800);
+      auth.createUserWithEmailAndPassword(email, password)
+        .then((cred) => {
+          const user = cred.user;
+          return user.updateProfile({ displayName: `${firstName} ${lastName}` })
+            .then(() => db.collection('usuarios').doc(user.uid).set({
+              firstName,
+              lastName,
+              email,
+              phone,
+              createdAt: new Date().toLocaleDateString('es-PE'),
+            }))
+            .then(() => {
+              loginSuccess({ id: user.uid, firstName, lastName, email, phone }, false);
+            });
+        })
+        .catch((err) => {
+          btn.disabled = false;
+          btn.innerHTML = 'Crear cuenta';
+          if (err.code === 'auth/email-already-in-use') {
+            setError('email', 'Ya existe una cuenta con ese email');
+          } else {
+            showAlert(err.message, 'error');
+          }
+        });
     });
 
     function socialLogin(provider) {
