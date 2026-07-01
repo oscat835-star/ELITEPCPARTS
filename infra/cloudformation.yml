@@ -1,25 +1,22 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-  ELITEPCPARTS static site hosting: private S3 bucket served through CloudFront
-  using Origin Access Control (OAC). The bucket is never public.
+  ELITEPCPARTS static site hosting: CloudFront (with OAC + security headers) in front
+  of a private S3 bucket. The bucket itself is NOT created here — the deploy workflow
+  ensures it exists (create-if-missing) so re-runs never fail on an existing bucket.
+  This stack manages CloudFront, the OAC, the response-headers policy, and the bucket
+  policy that lets CloudFront read the (external) bucket.
+
+Parameters:
+  SiteBucketName:
+    Type: String
+    Default: elite-pc-parts-461839758888-us-east-2-an
+    Description: Name of the S3 bucket that holds the site (ensured by the deploy workflow).
+  SiteBucketRegion:
+    Type: String
+    Default: us-east-2
+    Description: Region of SiteBucketName — used to build the CloudFront origin domain.
 
 Resources:
-  SiteBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      # Pinned so the deploy IAM policy (infra/iam/deploy-permissions-policy.json)
-      # can scope to this exact bucket. Globally unique via account id + suffix.
-      BucketName: elite-pc-parts-461839758888-us-east-2-an
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-
   OriginAccessControl:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
@@ -77,7 +74,7 @@ Resources:
         HttpVersion: http2and3
         Origins:
           - Id: s3-origin
-            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            DomainName: !Sub "${SiteBucketName}.s3.${SiteBucketRegion}.amazonaws.com"
             OriginAccessControlId: !GetAtt OriginAccessControl.Id
             S3OriginConfig:
               OriginAccessIdentity: ""
@@ -98,10 +95,12 @@ Resources:
             ResponsePagePath: /src/pages/404.html
             ErrorCachingMinTTL: 10
 
+  # Applies the CloudFront-read policy to the (externally-ensured) bucket. Works
+  # whether the bucket was just created or already existed.
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref SiteBucket
+      Bucket: !Ref SiteBucketName
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -110,7 +109,7 @@ Resources:
             Principal:
               Service: cloudfront.amazonaws.com
             Action: s3:GetObject
-            Resource: !Sub "${SiteBucket.Arn}/*"
+            Resource: !Sub "arn:aws:s3:::${SiteBucketName}/*"
             Condition:
               StringEquals:
                 AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution.Id}"
@@ -118,7 +117,7 @@ Resources:
 Outputs:
   BucketName:
     Description: S3 bucket the site is synced to
-    Value: !Ref SiteBucket
+    Value: !Ref SiteBucketName
   DistributionId:
     Description: CloudFront distribution ID (for cache invalidation)
     Value: !Ref Distribution
