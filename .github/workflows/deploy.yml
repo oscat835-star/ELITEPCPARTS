@@ -72,14 +72,22 @@ jobs:
 
       - name: Ensure site bucket exists (create if missing)
         run: |
-          if aws s3api head-bucket --bucket "$SITE_BUCKET" 2>/dev/null; then
+          if aws s3api head-bucket --bucket "$SITE_BUCKET" --region "$SITE_BUCKET_REGION" 2>/dev/null; then
             echo "Bucket already exists: $SITE_BUCKET"
           else
             echo "Creating bucket $SITE_BUCKET in $SITE_BUCKET_REGION"
+            # This bucket name uses the account-regional namespace convention
+            # (<prefix>-<accountId>-<region>-an), so CreateBucket must send the
+            # x-amz-bucket-namespace: account-regional header (--bucket-namespace),
+            # otherwise S3 returns MissingNamespaceHeader.
             if [ "$SITE_BUCKET_REGION" = "us-east-1" ]; then
-              aws s3api create-bucket --bucket "$SITE_BUCKET"
+              aws s3api create-bucket --bucket "$SITE_BUCKET" \
+                --bucket-namespace account-regional \
+                --region "$SITE_BUCKET_REGION"
             else
               aws s3api create-bucket --bucket "$SITE_BUCKET" \
+                --bucket-namespace account-regional \
+                --region "$SITE_BUCKET_REGION" \
                 --create-bucket-configuration LocationConstraint="$SITE_BUCKET_REGION"
             fi
             aws s3api put-public-access-block --bucket "$SITE_BUCKET" \
