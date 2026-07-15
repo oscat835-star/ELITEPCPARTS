@@ -157,7 +157,7 @@
       clearErrors();
       const email = document.getElementById('email').value.trim();
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        setError('email', 'Ingresá tu email para enviarte el enlace de restablecimiento');
+        setError('email', 'Ingresa tu email para enviarte el enlace de restablecimiento');
         return;
       }
       auth.sendPasswordResetEmail(email)
