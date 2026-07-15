@@ -7,6 +7,13 @@ import { OrderItem } from './order_items/order-item.entity';
 import { Cart } from './cart/cart.entity';
 import { Review } from './reviews/review.entity';
 import { EmailVerification } from './email_verifications/email-verification.entity';
+import { UsuariosModule } from './usuarios/usuarios.module';
+import { ComponentsModule } from './components/components.module';
+import { OrdersModule } from './orders/orders.module';
+import { OrderItemsModule } from './order_items/order_items.module';
+import { CartModule } from './cart/cart.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { EmailVerificationsModule } from './email_verifications/email_verification.module';
 
 @Module({
   imports: [
@@ -20,6 +27,13 @@ import { EmailVerification } from './email_verifications/email-verification.enti
       entities: [Usuario, Component, Order, OrderItem, Cart, Review, EmailVerification],
       synchronize: true,
     }),
+    UsuariosModule,
+    ComponentsModule,
+    OrdersModule,
+    OrderItemsModule,
+    CartModule,
+    ReviewsModule,
+    EmailVerificationsModule,
   ],
 })
 export class AppModule {}
