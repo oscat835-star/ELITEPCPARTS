@@ -59,7 +59,7 @@ function renderComponents(components) {
         <h4>${c.name}</h4>
         <p>${c.desc}</p>
       </div>
-      <span class="component-price">$${c.price.toLocaleString('es-AR')}</span>
+      <span class="component-price">S/ ${c.price.toLocaleString('es-PE')}</span>
       <div class="component-select-btn">
         <i class="fa fa-${selectedComponents[slot]?.id === c.id ? 'check' : 'plus'}"></i>
       </div>
@@ -89,7 +89,7 @@ function renderSummary() {
 
   if (!keys.length) {
     list.innerHTML = '<p class="summary-empty">Aún no seleccionaste componentes</p>';
-    document.getElementById('buildTotal').textContent = '$0';
+    document.getElementById('buildTotal').textContent = 'S/0';
     addBtn.disabled = true;
     return;
   }
@@ -101,11 +101,11 @@ function renderSummary() {
     total += c.price;
     return `<div class="summary-row">
       <span>${slotLabels[slot]}: ${c.name.substring(0,24)}…</span>
-      <strong>$${c.price.toLocaleString('es-AR')}</strong>
+      <strong>$${c.price.toLocaleString('es-PE')}</strong>
     </div>`;
   }).join('');
 
-  document.getElementById('buildTotal').textContent = '$' + total.toLocaleString('es-AR');
+  document.getElementById('buildTotal').textContent = 'S/' + total.toLocaleString('es-PE');
   addBtn.disabled = keys.length < 3;
 }
 
